@@ -8,6 +8,7 @@ export default function App() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [editingEntry, setEditingEntry] = useState(null);
 
   // First render par backend se entries lo
   useEffect(() => {
@@ -38,13 +39,64 @@ export default function App() {
 
   // AddEntry se naya entry aayega
   function addEntry(newEntry) {
-    // naya upar
     setEntries((prev) => [newEntry, ...prev]);
+  }
+
+  // Edit button click
+  function handleEdit(entry) {
+    setEditingEntry(entry);
+  }
+
+  // AddEntry me update hone ke baad
+  function handleUpdate(updatedEntry) {
+    setEntries((prev) =>
+      prev.map((e) =>
+        (e._id || e.id) === (updatedEntry._id || updatedEntry.id)
+          ? updatedEntry
+          : e
+      )
+    );
+  }
+
+  function clearEditing() {
+    setEditingEntry(null);
+  }
+
+  // Delete
+  async function handleDelete(id) {
+    const confirmed = window.confirm("Pakka delete karna chahte ho?");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/entries/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Delete nahi ho paaya.");
+        return;
+      }
+
+      setEntries((prev) => prev.filter((e) => (e._id || e.id) !== id));
+
+      if (editingEntry && (editingEntry._id || editingEntry.id) === id) {
+        setEditingEntry(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Backend se connect nahi ho paaya.");
+    }
   }
 
   return (
     <div className="app-container">
-      <AddEntry onAdd={addEntry} />
+      <AddEntry
+        onAdd={addEntry}
+        onUpdate={handleUpdate}
+        editingEntry={editingEntry}
+        clearEditing={clearEditing}
+      />
 
       <h2>Saved Entries (MongoDB)</h2>
 
@@ -53,7 +105,11 @@ export default function App() {
       ) : loadError ? (
         <p style={{ color: "red", fontSize: 13 }}>{loadError}</p>
       ) : (
-        <EntriesList entries={entries} />
+        <EntriesList
+          entries={entries}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       )}
     </div>
   );

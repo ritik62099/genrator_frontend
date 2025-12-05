@@ -1,14 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { calculateMinutes, formatDuration } from "../utils/timeUtils";
 
 const API_BASE_URL = "https://genrator-api.onrender.com";
 
-export default function AddEntry({ onAdd }) {
+export default function AddEntry({ onAdd, onUpdate, editingEntry, clearEditing }) {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("18:00");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // jab bhi editingEntry change ho, form me values set karo
+  useEffect(() => {
+    if (editingEntry) {
+      setDate(editingEntry.date);
+      setStartTime(editingEntry.startTime);
+      setEndTime(editingEntry.endTime);
+    } else {
+      // reset
+      setDate(new Date().toISOString().slice(0, 10));
+      setStartTime("09:00");
+      setEndTime("18:00");
+    }
+  }, [editingEntry]);
 
   const totalMinutes = calculateMinutes(startTime, endTime);
 
@@ -30,21 +44,42 @@ export default function AddEntry({ onAdd }) {
     try {
       setSaving(true);
 
-      const res = await fetch(`${API_BASE_URL}/api/entries`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, startTime, endTime }),
-      });
+      if (editingEntry) {
+        // EDIT MODE → PUT
+        const id = editingEntry._id || editingEntry.id;
 
-      const data = await res.json();
+        const res = await fetch(`${API_BASE_URL}/api/entries/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date, startTime, endTime }),
+        });
 
-      if (!res.ok) {
-        setError(data.error || "Save nahi ho paaya.");
-        return;
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.error || "Update nahi ho paaya.");
+          return;
+        }
+
+        onUpdate(data);
+        clearEditing();
+      } else {
+        // CREATE MODE → POST
+        const res = await fetch(`${API_BASE_URL}/api/entries`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date, startTime, endTime }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          setError(data.error || "Save nahi ho paaya.");
+          return;
+        }
+
+        onAdd(data);
       }
-
-      // Backend se aaya entry (with _id)
-      onAdd(data);
     } catch (err) {
       console.error(err);
       setError("Server se connect nahi ho paaya.");
@@ -53,11 +88,15 @@ export default function AddEntry({ onAdd }) {
     }
   }
 
+  const isEditing = !!editingEntry;
+
   return (
     <div>
       <h1>Daily Time Generator</h1>
       <p className="subtitle">
-        Start & end time daalo, duration auto calculate hoga.
+        {isEditing
+          ? "Entry edit karo, time update ho jayega."
+          : "Start & end time daalo, duration auto calculate hoga."}
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -90,15 +129,40 @@ export default function AddEntry({ onAdd }) {
 
         {totalMinutes !== null && (
           <div style={{ fontSize: 13, marginTop: 4 }}>
-            Aaj ka time: <b>{formatDuration(totalMinutes)}</b>
+            {isEditing ? "Updated time: " : "Aaj ka time: "}
+            <b>{formatDuration(totalMinutes)}</b>
           </div>
         )}
 
         {error && <div className="error">{error}</div>}
 
-        <button type="submit" disabled={saving}>
-          {saving ? "Saving..." : "Add Entry"}
-        </button>
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <button type="submit" disabled={saving}>
+            {saving
+              ? isEditing
+                ? "Updating..."
+                : "Saving..."
+              : isEditing
+              ? "Update Entry"
+              : "Add Entry"}
+          </button>
+
+          {isEditing && (
+            <button
+              type="button"
+              onClick={clearEditing}
+              style={{
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: "1px solid #e5e7eb",
+                background: "#ffffff",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );
