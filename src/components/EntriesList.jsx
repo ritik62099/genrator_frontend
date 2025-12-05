@@ -1,19 +1,9 @@
 // frontend/src/components/EntriesList.jsx
-import { formatDuration } from "../utils/timeUtils";
+import { calculateGeneratorDiff } from "../utils/timeUtils";
 
 const monthNames = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
 ];
 
 export default function EntriesList({ entries, onEdit, onDelete }) {
@@ -34,7 +24,7 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
     groups[key].items.push(entry);
   });
 
-  const sortedKeys = Object.keys(groups).sort().reverse(); // latest month upar
+  const sortedKeys = Object.keys(groups).sort().reverse();
   const hasEntries = entries.length > 0;
 
   return (
@@ -59,7 +49,6 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
               </h3>
 
               <div
-                className="entry-list"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
@@ -68,14 +57,29 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
               >
                 {group.items.map((entry) => {
                   const id = entry._id || entry.id;
-                  const hours = entry.diffHours ?? 0;
-                  const minutes = entry.diffMinutes ?? 0;
-                  const totalMin = entry.totalMinutes ?? 0;
+
+                  // diff agar backend se aaya ho to use karo, warna front-end se calculate
+                  const diff =
+                    entry.diffHours != null && entry.diffMinutes != null
+                      ? {
+                          hours: entry.diffHours,
+                          minutes: entry.diffMinutes,
+                          totalMinutes: entry.totalMinutes ?? 0,
+                        }
+                      : calculateGeneratorDiff(
+                          entry.startHour,
+                          entry.startMinute,
+                          entry.endHour,
+                          entry.endMinute
+                        );
+
+                  const totalText = diff
+                    ? `${diff.hours} H ${diff.minutes} M (${diff.totalMinutes} Min)`
+                    : "N/A";
 
                   return (
                     <div
                       key={id}
-                      className="entry-card"
                       style={{
                         border: "1px solid #e5e7eb",
                         borderRadius: 10,
@@ -87,23 +91,23 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
                         gap: 8,
                       }}
                     >
-                      <div className="entry-meta" style={{ fontSize: 13 }}>
+                      <div style={{ fontSize: 13 }}>
                         <div
-                          className="entry-meta-date"
                           style={{ fontWeight: 600, marginBottom: 4 }}
                         >
                           {entry.date}
                         </div>
 
-                        <div className="entry-time">
-                          <b>Start:</b> {entry.startHour} H {entry.startMinute} M
+                        <div>
+                          <b>Start:</b>{" "}
+                          {entry.startHour} H {entry.startMinute} M
                         </div>
-                        <div className="entry-time">
-                          <b>End:</b> {entry.endHour} H {entry.endMinute} M
+                        <div>
+                          <b>End:</b>{" "}
+                          {entry.endHour} H {entry.endMinute} M
                         </div>
 
                         <div
-                          className="entry-duration"
                           style={{
                             marginTop: 6,
                             padding: 6,
@@ -113,7 +117,7 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
                             fontWeight: 600,
                           }}
                         >
-                          Total: {hours} H {minutes} M ({formatDuration(totalMin)})
+                          Total: {totalText}
                         </div>
                       </div>
 
