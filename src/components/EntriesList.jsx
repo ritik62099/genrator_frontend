@@ -35,40 +35,96 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
   });
 
   const sortedKeys = Object.keys(groups).sort().reverse(); // latest month upar
-
   const hasEntries = entries.length > 0;
 
   return (
-    <div>
+    <div style={{ maxWidth: 800, margin: "0 auto" }}>
       {!hasEntries ? (
         <p style={{ fontSize: 14, color: "#6b7280" }}>Koi entry nahi hai.</p>
       ) : (
         sortedKeys.map((key) => {
           const group = groups[key];
           return (
-            <div key={key} style={{ marginBottom: 20 }}>
-              <h3 style={{ marginBottom: 8 }}>{group.label}</h3>
-              <div className="entry-list">
+            <section key={key} style={{ marginBottom: 24 }}>
+              <h3
+                style={{
+                  marginBottom: 8,
+                  fontSize: 18,
+                  fontWeight: 600,
+                  borderBottom: "1px solid #e5e7eb",
+                  paddingBottom: 4,
+                }}
+              >
+                {group.label}
+              </h3>
+
+              <div
+                className="entry-list"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                  gap: 12,
+                }}
+              >
                 {group.items.map((entry) => {
                   const id = entry._id || entry.id;
+                  const hours = entry.diffHours ?? 0;
+                  const minutes = entry.diffMinutes ?? 0;
+                  const totalMin = entry.totalMinutes ?? 0;
+
                   return (
-                    <div key={id} className="entry-card">
-                      <div className="entry-meta">
-                        <div className="entry-meta-date">{entry.date}</div>
+                    <div
+                      key={id}
+                      className="entry-card"
+                      style={{
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 10,
+                        padding: 12,
+                        background: "#ffffff",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        gap: 8,
+                      }}
+                    >
+                      <div className="entry-meta" style={{ fontSize: 13 }}>
+                        <div
+                          className="entry-meta-date"
+                          style={{ fontWeight: 600, marginBottom: 4 }}
+                        >
+                          {entry.date}
+                        </div>
+
                         <div className="entry-time">
-                          Start: {entry.startHour}h {entry.startMinute}m
+                          <b>Start:</b> {entry.startHour} H {entry.startMinute} M
                         </div>
                         <div className="entry-time">
-                          End: {entry.endHour}h {entry.endMinute}m
+                          <b>End:</b> {entry.endHour} H {entry.endMinute} M
                         </div>
-                        <div className="entry-duration">
-                          Total:{" "}
-                          {formatDuration(entry.totalMinutes)}{" "}
-                          {/* e.g. "76 Min" */}
+
+                        <div
+                          className="entry-duration"
+                          style={{
+                            marginTop: 6,
+                            padding: 6,
+                            borderRadius: 8,
+                            background: "#ecfdf3",
+                            border: "1px solid #bbf7d0",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Total: {hours} H {minutes} M ({formatDuration(totalMin)})
                         </div>
                       </div>
 
-                      <div style={{ display: "flex", gap: 8 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          marginTop: 6,
+                          flexWrap: "wrap",
+                        }}
+                      >
                         <button
                           type="button"
                           onClick={() => onEdit(entry)}
@@ -84,7 +140,7 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
                           ✏️ Edit
                         </button>
 
-                          <button
+                        <button
                           type="button"
                           onClick={() => onDelete(id)}
                           style={{
@@ -104,30 +160,31 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
                   );
                 })}
               </div>
-            </div>
+            </section>
           );
         })
       )}
 
-      <button
-        onClick={() =>
-          window.open(
-            "https://genrator-api.onrender.com/api/entries/download/pdf"
-          )
-        }
-        style={{
-          marginTop: "20px",
-          padding: "10px 15px",
-          fontWeight: "bold",
-          border: "none",
-          background: "#2563eb",
-          color: "white",
-          borderRadius: "8px",
-          cursor: "pointer",
-        }}
-      >
-        📄 Download PDF
-      </button>
+      <div style={{ marginTop: 24, textAlign: "center" }}>
+        <button
+          onClick={() =>
+            window.open(
+              "https://genrator-api.onrender.com/api/entries/download/pdf"
+            )
+          }
+          style={{
+            padding: "10px 15px",
+            fontWeight: "bold",
+            border: "none",
+            background: "#2563eb",
+            color: "white",
+            borderRadius: "8px",
+            cursor: "pointer",
+          }}
+        >
+          📄 Download PDF
+        </button>
+      </div>
     </div>
   );
 }

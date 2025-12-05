@@ -1,6 +1,6 @@
 // frontend/src/components/AddEntry.jsx
 import { useEffect, useState } from "react";
-import { calculateGeneratorDiff, formatDuration } from "../utils/timeUtils";
+import { calculateGeneratorDiff } from "../utils/timeUtils";
 
 const API_BASE_URL = "https://genrator-api.onrender.com";
 
@@ -128,17 +128,31 @@ export default function AddEntry({
   const isEditing = !!editingEntry;
 
   return (
-    <div>
-      <h1>Generator Time Calculator</h1>
-      <p className="subtitle">
+    <div
+      style={{
+        maxWidth: 600,
+        margin: "0 auto 24px",
+        padding: 16,
+        borderRadius: 12,
+        background: "#ffffff",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+      }}
+    >
+      <h1 style={{ fontSize: 22, marginBottom: 4, textAlign: "center" }}>
+        Generator Time Calculator
+      </h1>
+      <p
+        className="subtitle"
+        style={{ textAlign: "center", marginBottom: 16, fontSize: 14 }}
+      >
         {isEditing
           ? "Entry edit karo, reading update ho jayegi."
-          : "Start / End meter reading daalo, total minutes milega."}
+          : "Start / End meter reading daalo, total time mil jayega."}
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <label>
-          Date
+      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>Date</span>
           <input
             type="date"
             value={date}
@@ -146,62 +160,90 @@ export default function AddEntry({
           />
         </label>
 
+        {/* Responsive grid for 4 inputs */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 8,
-            marginTop: 12,
-            marginBottom: 8,
+            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+            gap: 10,
+            marginTop: 4,
+            marginBottom: 4,
           }}
         >
-          <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <small>Start Hour</small>
             <input
               type="number"
               value={startHour}
               onChange={(e) => setStartHour(e.target.value)}
+              placeholder="3323"
             />
           </div>
-          <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <small>Start Min</small>
             <input
               type="number"
               value={startMinute}
               onChange={(e) => setStartMinute(e.target.value)}
+              placeholder="14"
             />
           </div>
-          <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <small>End Hour</small>
             <input
               type="number"
               value={endHour}
               onChange={(e) => setEndHour(e.target.value)}
+              placeholder="3324"
             />
           </div>
-          <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             <small>End Min</small>
             <input
               type="number"
               value={endMinute}
               onChange={(e) => setEndMinute(e.target.value)}
+              placeholder="30"
             />
           </div>
         </div>
 
         {diff && (
-          <div style={{ fontSize: 13, marginTop: 4 }}>
+          <div
+            style={{
+              fontSize: 13,
+              marginTop: 4,
+              padding: 8,
+              borderRadius: 8,
+              background: "#ecfdf3",
+              border: "1px solid #bbf7d0",
+            }}
+          >
             Total:{" "}
             <b>
-              {formatDuration(diff.totalMinutes)} ({diff.hours}h{" "}
-              {diff.minutes}m)
+              {diff.hours} H {diff.minutes} M ({diff.totalMinutes} Min)
             </b>
           </div>
         )}
 
-        {error && <div className="error">{error}</div>}
+        {error && (
+          <div
+            className="error"
+            style={{ color: "#dc2626", fontSize: 13, marginTop: 4 }}
+          >
+            {error}
+          </div>
+        )}
 
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginTop: 8,
+            flexWrap: "wrap",
+            justifyContent: "flex-start",
+          }}
+        >
           <button type="submit" disabled={saving}>
             {saving
               ? isEditing
