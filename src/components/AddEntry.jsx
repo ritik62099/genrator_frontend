@@ -1,12 +1,22 @@
+// frontend/src/components/AddEntry.jsx
 import { useEffect, useState } from "react";
-import { calculateMinutes, formatDuration } from "../utils/timeUtils";
+import { calculateGeneratorDiff, formatDuration } from "../utils/timeUtils";
 
 const API_BASE_URL = "https://genrator-api.onrender.com";
 
-export default function AddEntry({ onAdd, onUpdate, editingEntry, clearEditing }) {
+export default function AddEntry({
+  onAdd,
+  onUpdate,
+  editingEntry,
+  clearEditing,
+}) {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("18:00");
+
+  const [startHour, setStartHour] = useState("");
+  const [startMinute, setStartMinute] = useState("");
+  const [endHour, setEndHour] = useState("");
+  const [endMinute, setEndMinute] = useState("");
+
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -14,35 +24,62 @@ export default function AddEntry({ onAdd, onUpdate, editingEntry, clearEditing }
   useEffect(() => {
     if (editingEntry) {
       setDate(editingEntry.date);
-      setStartTime(editingEntry.startTime);
-      setEndTime(editingEntry.endTime);
+      setStartHour(editingEntry.startHour);
+      setStartMinute(editingEntry.startMinute);
+      setEndHour(editingEntry.endHour);
+      setEndMinute(editingEntry.endMinute);
     } else {
-      // reset
       setDate(new Date().toISOString().slice(0, 10));
-      setStartTime("09:00");
-      setEndTime("18:00");
+      setStartHour("");
+      setStartMinute("");
+      setEndHour("");
+      setEndMinute("");
     }
   }, [editingEntry]);
 
-  const totalMinutes = calculateMinutes(startTime, endTime);
+  const diff = calculateGeneratorDiff(
+    startHour,
+    startMinute,
+    endHour,
+    endMinute
+  );
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
 
-    if (!date || !startTime || !endTime) {
+    if (
+      !date ||
+      startHour === "" ||
+      startMinute === "" ||
+      endHour === "" ||
+      endMinute === ""
+    ) {
       setError("Saari fields bhar do.");
       return;
     }
 
-    const mins = calculateMinutes(startTime, endTime);
-    if (!mins) {
-      setError("End time, start time se baad ka hona chahiye.");
+    const calc = calculateGeneratorDiff(
+      startHour,
+      startMinute,
+      endHour,
+      endMinute
+    );
+    if (!calc) {
+      setError("End reading, start reading se bada hona chahiye.");
       return;
     }
 
     try {
       setSaving(true);
+
+      const payload = {
+        date,
+        startHour: Number(startHour),
+        startMinute: Number(startMinute),
+        endHour: Number(endHour),
+        endMinute: Number(endMinute),
+      };
 
       if (editingEntry) {
         // EDIT MODE → PUT
@@ -51,7 +88,7 @@ export default function AddEntry({ onAdd, onUpdate, editingEntry, clearEditing }
         const res = await fetch(`${API_BASE_URL}/api/entries/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ date, startTime, endTime }),
+          body: JSON.stringify(payload),
         });
 
         const data = await res.json();
@@ -68,7 +105,7 @@ export default function AddEntry({ onAdd, onUpdate, editingEntry, clearEditing }
         const res = await fetch(`${API_BASE_URL}/api/entries`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ date, startTime, endTime }),
+          body: JSON.stringify(payload),
         });
 
         const data = await res.json();
@@ -92,11 +129,11 @@ export default function AddEntry({ onAdd, onUpdate, editingEntry, clearEditing }
 
   return (
     <div>
-      <h1>Daily Time Generator</h1>
+      <h1>Generator Time Calculator</h1>
       <p className="subtitle">
         {isEditing
-          ? "Entry edit karo, time update ho jayega."
-          : "Start & end time daalo, duration auto calculate hoga."}
+          ? "Entry edit karo, reading update ho jayegi."
+          : "Start / End meter reading daalo, total minutes milega."}
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -109,28 +146,56 @@ export default function AddEntry({ onAdd, onUpdate, editingEntry, clearEditing }
           />
         </label>
 
-        <label>
-          Start Time
-          <input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-          />
-        </label>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 8,
+            marginTop: 12,
+            marginBottom: 8,
+          }}
+        >
+          <div>
+            <small>Start Hour</small>
+            <input
+              type="number"
+              value={startHour}
+              onChange={(e) => setStartHour(e.target.value)}
+            />
+          </div>
+          <div>
+            <small>Start Min</small>
+            <input
+              type="number"
+              value={startMinute}
+              onChange={(e) => setStartMinute(e.target.value)}
+            />
+          </div>
+          <div>
+            <small>End Hour</small>
+            <input
+              type="number"
+              value={endHour}
+              onChange={(e) => setEndHour(e.target.value)}
+            />
+          </div>
+          <div>
+            <small>End Min</small>
+            <input
+              type="number"
+              value={endMinute}
+              onChange={(e) => setEndMinute(e.target.value)}
+            />
+          </div>
+        </div>
 
-        <label>
-          End Time
-          <input
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-          />
-        </label>
-
-        {totalMinutes !== null && (
+        {diff && (
           <div style={{ fontSize: 13, marginTop: 4 }}>
-            {isEditing ? "Updated time: " : "Aaj ka time: "}
-            <b>{formatDuration(totalMinutes)}</b>
+            Total:{" "}
+            <b>
+              {formatDuration(diff.totalMinutes)} ({diff.hours}h{" "}
+              {diff.minutes}m)
+            </b>
           </div>
         )}
 

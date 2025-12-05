@@ -1,3 +1,4 @@
+// frontend/src/components/EntriesList.jsx
 import { formatDuration } from "../utils/timeUtils";
 
 const monthNames = [
@@ -55,10 +56,15 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
                       <div className="entry-meta">
                         <div className="entry-meta-date">{entry.date}</div>
                         <div className="entry-time">
-                          {entry.startTime} → {entry.endTime}
+                          Start: {entry.startHour}h {entry.startMinute}m
+                        </div>
+                        <div className="entry-time">
+                          End: {entry.endHour}h {entry.endMinute}m
                         </div>
                         <div className="entry-duration">
-                          {formatDuration(entry.totalMinutes)}
+                          Total:{" "}
+                          {formatDuration(entry.totalMinutes)}{" "}
+                          {/* e.g. "76 Min" */}
                         </div>
                       </div>
 
@@ -78,7 +84,7 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
                           ✏️ Edit
                         </button>
 
-                        <button
+                          <button
                           type="button"
                           onClick={() => onDelete(id)}
                           style={{
