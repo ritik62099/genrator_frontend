@@ -7,7 +7,7 @@ const monthNames = [
 ];
 
 export default function EntriesList({ entries, onEdit, onDelete }) {
-  // Month-wise grouping
+  // Month-wise grouping + month total
   const groups = {};
 
   entries.forEach((entry) => {
@@ -19,9 +19,32 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
     if (!groups[key]) {
       const monthIndex = parseInt(month, 10) - 1;
       const label = `${monthNames[monthIndex]} ${year}`;
-      groups[key] = { label, items: [] };
+      groups[key] = { label, items: [], totalMinutes: 0 };
     }
-    groups[key].items.push(entry);
+
+    // entry ka diff nikaal ke month total me add karo
+    let diff =
+      entry.diffHours != null && entry.diffMinutes != null
+        ? {
+            hours: entry.diffHours,
+            minutes: entry.diffMinutes,
+            totalMinutes: entry.totalMinutes ?? 0,
+          }
+        : calculateGeneratorDiff(
+            entry.startHour,
+            entry.startMinute,
+            entry.endHour,
+            entry.endMinute
+          );
+
+    if (diff && !Number.isNaN(diff.totalMinutes)) {
+      groups[key].totalMinutes += diff.totalMinutes;
+    } else {
+      diff = null; // agar galat ho gaya to card pe N/A dikhayenge
+    }
+
+    // diff ko entry me attach kar dena (taaki render ke time dobara calc na karna pade)
+    groups[key].items.push({ ...entry, _computedDiff: diff });
   });
 
   const sortedKeys = Object.keys(groups).sort().reverse();
@@ -34,20 +57,51 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
       ) : (
         sortedKeys.map((key) => {
           const group = groups[key];
+          const monthTotalMin = group.totalMinutes;
+          const monthTotalH = Math.floor(monthTotalMin / 60);
+          const monthTotalM = monthTotalMin % 60;
+
           return (
             <section key={key} style={{ marginBottom: 24 }}>
-              <h3
+              {/* Month heading + month total */}
+              <div
                 style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: 8,
+                  flexWrap: "wrap",
                   marginBottom: 8,
-                  fontSize: 18,
-                  fontWeight: 600,
-                  borderBottom: "1px solid #e5e7eb",
-                  paddingBottom: 4,
                 }}
               >
-                {group.label}
-              </h3>
+                <h3
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 600,
+                    borderBottom: "1px solid #e5e7eb",
+                    paddingBottom: 4,
+                    margin: 0,
+                  }}
+                >
+                  {group.label}
+                </h3>
 
+                <div
+                  style={{
+                    fontSize: 13,
+                    padding: "4px 8px",
+                    borderRadius: 999,
+                    background: "#eef2ff",
+                    border: "1px solid #c7d2fe",
+                    fontWeight: 600,
+                  }}
+                >
+                  Month Total: {monthTotalH} H {monthTotalM} M (
+                  {monthTotalMin} Min)
+                </div>
+              </div>
+
+              {/* Cards */}
               <div
                 style={{
                   display: "grid",
@@ -57,21 +111,7 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
               >
                 {group.items.map((entry) => {
                   const id = entry._id || entry.id;
-
-                  // diff agar backend se aaya ho to use karo, warna front-end se calculate
-                  const diff =
-                    entry.diffHours != null && entry.diffMinutes != null
-                      ? {
-                          hours: entry.diffHours,
-                          minutes: entry.diffMinutes,
-                          totalMinutes: entry.totalMinutes ?? 0,
-                        }
-                      : calculateGeneratorDiff(
-                          entry.startHour,
-                          entry.startMinute,
-                          entry.endHour,
-                          entry.endMinute
-                        );
+                  const diff = entry._computedDiff;
 
                   const totalText = diff
                     ? `${diff.hours} H ${diff.minutes} M (${diff.totalMinutes} Min)`
@@ -99,12 +139,11 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
                         </div>
 
                         <div>
-                          <b>Start:</b>{" "}
-                          {entry.startHour} H {entry.startMinute} M
+                          <b>Start:</b> {entry.startHour} H{" "}
+                          {entry.startMinute} M
                         </div>
                         <div>
-                          <b>End:</b>{" "}
-                          {entry.endHour} H {entry.endMinute} M
+                          <b>End:</b> {entry.endHour} H {entry.endMinute} M
                         </div>
 
                         <div
