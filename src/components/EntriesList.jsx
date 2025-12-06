@@ -22,28 +22,32 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
       groups[key] = { label, items: [], totalMinutes: 0 };
     }
 
-    // entry ka diff nikaal ke month total me add karo
+    const isClosed = entry.closed === true;
+
     let diff =
-      entry.diffHours != null && entry.diffMinutes != null
+      !isClosed &&
+      entry.diffHours != null &&
+      entry.diffMinutes != null
         ? {
             hours: entry.diffHours,
             minutes: entry.diffMinutes,
             totalMinutes: entry.totalMinutes ?? 0,
           }
-        : calculateGeneratorDiff(
+        : !isClosed
+        ? calculateGeneratorDiff(
             entry.startHour,
             entry.startMinute,
             entry.endHour,
             entry.endMinute
-          );
+          )
+        : null;
 
     if (diff && !Number.isNaN(diff.totalMinutes)) {
       groups[key].totalMinutes += diff.totalMinutes;
     } else {
-      diff = null; // agar galat ho gaya to card pe N/A dikhayenge
+      diff = null;
     }
 
-    // diff ko entry me attach kar dena (taaki render ke time dobara calc na karna pade)
     groups[key].items.push({ ...entry, _computedDiff: diff });
   });
 
@@ -112,10 +116,16 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
                 {group.items.map((entry) => {
                   const id = entry._id || entry.id;
                   const diff = entry._computedDiff;
+                  const isClosed = entry.closed === true;
 
-                  const totalText = diff
-                    ? `${diff.hours} H ${diff.minutes} M (${diff.totalMinutes} Min)`
-                    : "N/A";
+                  let totalText;
+                  if (isClosed) {
+                    totalText = "Generator Closed (Aaj band tha)";
+                  } else if (diff) {
+                    totalText = `${diff.hours} H ${diff.minutes} M (${diff.totalMinutes} Min)`;
+                  } else {
+                    totalText = "N/A";
+                  }
 
                   return (
                     <div
@@ -138,25 +148,33 @@ export default function EntriesList({ entries, onEdit, onDelete }) {
                           {entry.date}
                         </div>
 
-                        <div>
-                          <b>Start:</b> {entry.startHour} H{" "}
-                          {entry.startMinute} M
-                        </div>
-                        <div>
-                          <b>End:</b> {entry.endHour} H {entry.endMinute} M
-                        </div>
+                        {!isClosed && (
+                          <>
+                            <div>
+                              <b>Start:</b> {entry.startHour} H{" "}
+                              {entry.startMinute} M
+                            </div>
+                            <div>
+                              <b>End:</b> {entry.endHour} H{" "}
+                              {entry.endMinute} M
+                            </div>
+                          </>
+                        )}
 
                         <div
                           style={{
                             marginTop: 6,
                             padding: 6,
                             borderRadius: 8,
-                            background: "#ecfdf3",
-                            border: "1px solid #bbf7d0",
+                            background: isClosed ? "#fee2e2" : "#ecfdf3",
+                            border: isClosed
+                              ? "1px solid #fecaca"
+                              : "1px solid #bbf7d0",
                             fontWeight: 600,
                           }}
                         >
-                          Total: {totalText}
+                          {isClosed ? "Status: " : "Total: "}
+                          {totalText}
                         </div>
                       </div>
 
